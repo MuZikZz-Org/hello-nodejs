@@ -40,8 +40,8 @@ jobs:
   Setup_AZ_Reources:
     name: "Calling workflow Azure login"
     uses: brightza008/poc-github-workflow/.github/workflows/az-authen.yaml@workflow
-    secrets: inherit
-      # AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Build_Docker_ACR:
     needs: env_workflow
@@ -51,8 +51,9 @@ jobs:
       APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
       AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
       AZ_CONTAINER_NAME: ${{needs.env_workflow.outputs.AZ_CONTAINER_NAME}}
-    secrets: inherit # pass all secrets into reuse-workflow
-
+    secrets: #inherit # pass all secrets into reuse-workflow
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      
   TEST_CALL_OUTPUT:
     runs-on: ubuntu-latest
     needs: Build_Docker_ACR
@@ -71,7 +72,8 @@ jobs:
       AZURE_CONTAINER_NAME: ${{needs.env_workflow.outputs.BLOB_CONTAINER_NAME}}
       APP_NAME: ${{github.event.repository.name}}
       APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }} # use the output (app version) from docker-build-acr.yaml
-    secrets: inherit # pass all secrets into reuse-workflow
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
  
   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
     needs: [env_workflow,Helm_Build_Chart] 
@@ -84,5 +86,6 @@ jobs:
       HELM_TEMPLATE_BRANCH: ${{needs.env_workflow.outputs.HELM_TEMPLATE_BRANCH}}
       AZ_RESOURCE_GROUP: bright-rg
       AZ_AKS_NAME: bright-aks
-    secrets: inherit 
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
         
