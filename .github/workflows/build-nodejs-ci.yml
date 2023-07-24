@@ -24,6 +24,9 @@ env:
     AKS_RESOURCE_GROUP: ${{ fromJson(vars.JSON).AKS_RESOURCE_GROUP }}
     AKS_NAME: ${{ fromJson(vars.JSON).AKS_NAME }}
 
+permissions:
+      id-token: write
+      contents: read
 jobs:
   env_workflow:
     runs-on: ubuntu-latest
