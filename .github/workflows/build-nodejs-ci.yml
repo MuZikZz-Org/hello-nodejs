@@ -46,12 +46,11 @@ jobs:
       - run: |
           echo "preparing output env"
  
-  login-reuseworkflow:
-    uses: brightza008/poc-github-workflow/.github/workflows/az-authen-cli.yaml@workflow
-    secrets:
-      CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  Setup_AZ_Reources:
+    name: "Calling workflow Azure login"
+    uses: brightza008/poc-github-workflow/.github/workflows/az-authen.yaml@workflow
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Build_Docker_ACR:
     needs: env_workflow
