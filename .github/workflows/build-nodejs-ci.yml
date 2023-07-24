@@ -48,14 +48,14 @@ jobs:
  
   Setup_AZ_Reources:
     name: "Calling workflow Azure login"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen.yaml@main
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Build_Docker_ACR:
     needs: env_workflow
     name: "Build Docker to ACR"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
     with:
       APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
       AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
@@ -73,7 +73,7 @@ jobs:
   Helm_Build_Chart: 
     needs: [env_workflow,Build_Docker_ACR]
     name: "Helm Build Chart to Blob storage"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@main
     with:
       HELM_TEMPLATE_REPO: ${{needs.env_workflow.outputs.HELM_TEMPLATE_REPO}}
       HELM_TEMPLATE_BRANCH: ${{needs.env_workflow.outputs.HELM_TEMPLATE_BRANCH}}
@@ -87,7 +87,7 @@ jobs:
   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
     needs: [env_workflow,Helm_Build_Chart] 
     name: "Helm deploy to AKS"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@main
     with:
       APP_NAME: ${{github.event.repository.name}}
       APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
