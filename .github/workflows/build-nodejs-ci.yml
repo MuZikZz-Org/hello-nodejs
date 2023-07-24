@@ -46,11 +46,15 @@ jobs:
       - run: |
           echo "preparing output env"
  
-  Setup_AZ_Reources:
-    name: "Calling workflow Azure login"
-    uses: brightza008/poc-github-workflow/.github/workflows/az-authen.yaml@workflow
-    secrets: #inherit
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Az CLI login
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
   Build_Docker_ACR:
     needs: env_workflow
