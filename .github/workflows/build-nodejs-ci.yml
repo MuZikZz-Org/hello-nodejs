@@ -48,14 +48,14 @@ jobs:
  
   Setup_AZ_Reources:
     name: "Calling workflow Azure login"
-    uses: MuZikZz-Org/poc-github-workflow/.github/workflows/az-authen.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen.yaml@workflow
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Build_Docker_ACR:
     needs: env_workflow
     name: "Build Docker to ACR"
-    uses: MuZikZz-Org/poc-github-workflow/.github/workflows/docker-build-acr.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@workflow
     with:
       APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
       AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
@@ -73,7 +73,7 @@ jobs:
   Helm_Build_Chart: 
     needs: [env_workflow,Build_Docker_ACR]
     name: "Helm Build Chart to Blob storage"
-    uses: MuZikZz-Org/poc-github-workflow/.github/workflows/helm-build-chart.yaml@workflow
+    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@workflow
     with:
       HELM_TEMPLATE_REPO: ${{needs.env_workflow.outputs.HELM_TEMPLATE_REPO}}
       HELM_TEMPLATE_BRANCH: ${{needs.env_workflow.outputs.HELM_TEMPLATE_BRANCH}}
@@ -84,18 +84,18 @@ jobs:
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
  
-#   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
-#     needs: [env_workflow,Helm_Build_Chart] 
-#     name: "Helm deploy to AKS"
-#     uses: MuZikZz-Org/poc-github-workflow/.github/workflows/helm-aks.yaml@workflow
-#     with:
-#       APP_NAME: ${{github.event.repository.name}}
-#       APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
-#       HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
-#       HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
-#       AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
-#       AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
-#       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
-#     secrets: #inherit
-#       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
+    needs: [env_workflow,Helm_Build_Chart] 
+    name: "Helm deploy to AKS"
+    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@workflow
+    with:
+      APP_NAME: ${{github.event.repository.name}}
+      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
+      HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
+      HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
+      AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
+      AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
+      AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       
