@@ -26,7 +26,7 @@ env:
 
 jobs:
   env_workflow:
-    runs-on: runner-default
+    runs-on: ubuntu-latest
     name: Setup Output Env
     outputs: 
       user: ${{env.docker_user}}
