@@ -120,6 +120,7 @@ jobs:
           with:
               ref: ${{github.ref_name}}
         - name: create pull reauest to main branch
-          run: gh pr create -B ${{github.ref_name}} -H main --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
+            ## gh pr create -B base_branch -H branch_to_merge
+          run: gh pr create -B main -H ${{github.ref_name}} --title 'Merge branch_to_merge into base_branch' --body 'Created by Github action'
           env:
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
