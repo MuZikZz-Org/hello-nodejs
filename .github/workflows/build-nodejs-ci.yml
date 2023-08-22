@@ -7,7 +7,7 @@ on:
       - 'feature/**' 
   # pull_request:
   #   branches: [ "main" ]  
-     
+      
  
 env:  
     JobEnvironment: "feature-branch"
