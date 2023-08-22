@@ -9,7 +9,7 @@ on:
   #   branches: [ "main" ]
    
  
-env: 
+env:  
     JobEnvironment: "feature-branch"
     PackageName: ${{github.event.repository.name}}
     # ACR
