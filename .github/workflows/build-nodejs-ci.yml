@@ -142,4 +142,4 @@ jobs:
       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
       PR_NUMBER: ${{ needs.Create_PR.outputs.PR_NUMBER }}
     secrets: #inherit
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}      
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
