@@ -35,6 +35,7 @@ jobs:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Clean_namespace:
+    needs: env_workflow  
     name: Clean up feature namespace after mearge
     uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
     with: 
