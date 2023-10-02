@@ -4,11 +4,44 @@ on:
   pull_request:
     types:
       - closed
+
+env: 
+    JobEnvironment: "feature-branch"
+    PackageName: ${{github.event.repository.name}}
+    # AKS
+    AKS_RESOURCE_GROUP: ${{ fromJson(vars.JSON).AKS_RESOURCE_GROUP }}
+    AKS_NAME: ${{ fromJson(vars.JSON).AKS_NAME }}
+
+
 jobs:
-         
+  env_workflow:
+    runs-on: ubuntu-latest
+    name: Preparation Environment
+    outputs: 
+      user: ${{env.docker_user}}
+      pass: ${{env.docker_password}}
+      JobEnvironment: ${{env.JobEnvironment}}
+      PackageName: ${{env.PackageName}}    
+      AKS_RESOURCE_GROUP: ${{ env.AKS_RESOURCE_GROUP }}
+      AKS_NAME: ${{ env.AKS_NAME }}
+    steps:
+      - run: |
+          echo "preparing output env"
+
+  Setup_AZ_Reources:
+    name: "Calling workflow Azure login"
+    uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen.yaml@main
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+
   Clean_namespace:
     name: Clean up feature namespace after mearge
     uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
+    with: 
+      AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
+      AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
+    secrets: #inherit
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}    
     
 
    
