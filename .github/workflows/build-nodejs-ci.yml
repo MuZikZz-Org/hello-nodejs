@@ -117,13 +117,13 @@ jobs:
       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-
-  # Git_tag:
-  #   needs: Build_Docker_ACR
-  #   name: "Pushing git tag"
-  #   uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
-  #   with:
-  #     APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
+  
+  Git_tag:
+    needs: Build_Docker_ACR
+    name: "Pushing git tag"
+    uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
+    with:
+      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
       
   Create_PR:
     needs: Deploy_helm
