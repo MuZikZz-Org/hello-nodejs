@@ -117,7 +117,7 @@ jobs:
       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-  
+
   # Git_tag:
   #   needs: Build_Docker_ACR
   #   name: "Pushing git tag"
