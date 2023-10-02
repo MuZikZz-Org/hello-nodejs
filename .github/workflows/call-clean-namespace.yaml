@@ -1,0 +1,14 @@
+name: Pull Request Merged
+
+on:
+  pull_request:
+    types:
+      - closed
+jobs:
+         
+  Clean_namespace:
+    name: Clean up feature namespace after mearge
+    uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
+    
+
+   
