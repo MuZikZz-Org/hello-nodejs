@@ -122,6 +122,8 @@ jobs:
     needs: Deploy_helm
     name: "Pushing git tag"
     uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
+    with:
+      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
       
   Create_PR:
     needs: Deploy_helm
