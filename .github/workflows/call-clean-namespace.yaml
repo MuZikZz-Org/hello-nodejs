@@ -1,4 +1,4 @@
-name: Pull Request Merged
+name: Check Pull Request Merged
 
 on:
   pull_request:
