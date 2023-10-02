@@ -134,8 +134,6 @@ jobs:
       JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
       SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
       SourceCodeRepo:  ${{ github.repository }}
-      APP_NAME: ${{github.event.repository.name}}
-      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
       HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
       HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
       AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
