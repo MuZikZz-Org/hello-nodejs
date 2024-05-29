@@ -64,6 +64,9 @@ jobs:
     needs: env_workflow
     name: Package versioning
     uses: MuZikZz-Org/action-workflow/.github/workflows/package-versioning.yaml@main
+    with:
+      Runtime: nodejs 
+      JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch 
 
   OUTPUT_PackageVersioning:
     runs-on: runner-utility
