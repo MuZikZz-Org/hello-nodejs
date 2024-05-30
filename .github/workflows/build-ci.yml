@@ -137,7 +137,7 @@ jobs:
     with:
       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
-
+      Runtime: nodejs 
 
   Git_Tag:
     needs: [Deploy_helm,Package_Versioning,Git_Push_Version]
