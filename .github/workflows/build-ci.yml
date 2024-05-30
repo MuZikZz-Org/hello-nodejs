@@ -140,7 +140,7 @@ jobs:
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
       Runtime: nodejs 
       SourceCodeBranch: ${{github.ref_name}}
-    secrets: inherit
+
 #   Git_Tag:
 #     needs: [Deploy_helm,Package_Versioning,Git_Push_Version]
 #     name: "Pushing git tag"
