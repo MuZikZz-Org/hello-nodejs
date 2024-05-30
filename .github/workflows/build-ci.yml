@@ -147,7 +147,7 @@ jobs:
       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       
   Create_PR:
-    needs: [Deploy_helm,Git_Push_Versio,Git_Tag]
+    needs: [Deploy_helm,Git_Push_Version,Git_Tag]
     name: create pull reauest to main branch
     uses: MuZikZz-Org/action-workflow/.github/workflows/create-pullrequest.yaml@main
     with:
