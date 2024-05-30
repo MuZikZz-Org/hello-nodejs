@@ -3,10 +3,10 @@ name: FeatureBranch Workflow Nodejs.
 on:
   workflow_dispatch:
   push:
-    branches: #[ "main" ]
+    branches: #[ $default-branch ]
       - 'feature/**'
   # pull_request:
-  #   branches: [ "main" ]
+  #   branches: [ $default-branch ]
   
 
 env: 
@@ -26,6 +26,8 @@ env:
     # AKS
     AKS_RESOURCE_GROUP: ${{ fromJson(vars.JSON).AKS_RESOURCE_GROUP }}
     AKS_NAME: ${{ fromJson(vars.JSON).AKS_NAME }}
+    ## Define Workspace
+    Workspace_Dir: "shared-workspace"
 
 jobs:
   env_workflow:
@@ -46,15 +48,10 @@ jobs:
       BLOB_CONTAINER_NAME: ${{env.BLOB_CONTAINER_NAME}}
       AKS_RESOURCE_GROUP: ${{ env.AKS_RESOURCE_GROUP }}
       AKS_NAME: ${{ env.AKS_NAME }}
+      Workspace_Dir: ${{ env.Workspace_Dir }}
     steps:
       - run: |
           echo "preparing output env"
- 
-  # Setup_AZ_Reources:
-  #   name: "Calling workflow Azure login"
-  #   uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen.yaml@main
-  #   secrets: #inherit
-  #     AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
   Az_login_managed_iden: 
     name: "Calling workflow Azure login with managed identity"
@@ -64,6 +61,10 @@ jobs:
     needs: env_workflow
     name: Package versioning
     uses: MuZikZz-Org/action-workflow/.github/workflows/package-versioning.yaml@main
+    with:
+      Runtime: nodejs 
+      JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch 
+      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
   OUTPUT_PackageVersioning:
     runs-on: runner-utility
@@ -72,12 +73,21 @@ jobs:
       - run: |
           echo "Package Output form Workflow PackageVersioning: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }}"
           
+  Nodejs_Build:
+    needs: [env_workflow,Package_Versioning]
+    name: Build NodeJS Package
+    uses: MuZikZz-Org/action-workflow/.github/workflows/nodejs-build.yaml@main
+    with: 
+      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
+
   Build_Docker_ACR:
-    needs: env_workflow
+    needs: [env_workflow,Nodejs_Build,Package_Versioning]
     name: "Build Docker to ACR"
     uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
     with:
+      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
       APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
       AZ_CONTAINER_NAME: ${{needs.env_workflow.outputs.AZ_CONTAINER_NAME}}
     secrets: #inherit # pass all secrets into reuse-workflow
@@ -91,7 +101,7 @@ jobs:
           echo ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
     
   Helm_Build_Chart: 
-    needs: [env_workflow,Build_Docker_ACR]
+    needs: [env_workflow,Build_Docker_ACR,Package_Versioning]
     name: "Helm Build Chart to Blob storage"
     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@main
     with:
@@ -100,19 +110,19 @@ jobs:
       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
       AZURE_CONTAINER_NAME: ${{needs.env_workflow.outputs.BLOB_CONTAINER_NAME}}
       APP_NAME: ${{github.event.repository.name}}
-      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }} # use the output (app version) from docker-build-acr.yaml
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
  
   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
-    needs: [env_workflow,Helm_Build_Chart] 
+    needs: [env_workflow,Helm_Build_Chart,Package_Versioning] 
     name: "Helm deploy to AKS"
     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@main
     with:
       JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
       SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
       APP_NAME: ${{github.event.repository.name}}
-      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
       HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
       AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
@@ -121,15 +131,24 @@ jobs:
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
   
-  Git_tag:
-    needs: Build_Docker_ACR
+  Git_Push_Version:
+    needs: [env_workflow,Deploy_helm,Package_Versioning]
+    name: "Pushing git Version"
+    uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-version.yaml@main
+    with:
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
+      Runtime: nodejs 
+      SourceCodeBranch: ${{github.ref_name}}
+
+  Git_Tag:
+    needs: [Deploy_helm,Package_Versioning,Git_Push_Version]
     name: "Pushing git tag"
     uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
     with:
-      APP_VERSION: ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       
   Create_PR:
-    needs: Deploy_helm
+    needs: [Deploy_helm,Git_Push_Version,Git_Tag]
     name: create pull reauest to main branch
     uses: MuZikZz-Org/action-workflow/.github/workflows/create-pullrequest.yaml@main
     with:
@@ -137,20 +156,20 @@ jobs:
       SourceCodeBranch: ${{github.ref_name}}
 
 
-  Clean_namespace:
-    # if_merged
-    if: github.event.pull_request.merged == true
-    name: Clean up feature namespace after mearge
-    uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
-    with:
-      JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
-      SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
-      SourceCodeRepo:  ${{ github.repository }}
-      HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
-      HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
-      AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
-      AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
-      AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
-      PR_NUMBER: ${{ needs.Create_PR.outputs.PR_NUMBER }}
-    secrets: #inherit
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  # Clean_namespace:
+  #   # if_merged
+  #   if: github.event.pull_request.merged == true
+  #   name: Clean up feature namespace after mearge
+  #   uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
+  #   with:
+  #     JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
+  #     SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
+  #     SourceCodeRepo:  ${{ github.repository }}
+  #     HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
+  #     HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
+  #     AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
+  #     AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
+  #     AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
+  #     PR_NUMBER: ${{ needs.Create_PR.outputs.PR_NUMBER }}
+  #   secrets: #inherit
+  #     AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
