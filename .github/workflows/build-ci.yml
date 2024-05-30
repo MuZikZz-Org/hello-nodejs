@@ -64,6 +64,7 @@ jobs:
     with:
       Runtime: nodejs 
       JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch 
+      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
   OUTPUT_PackageVersioning:
     runs-on: runner-utility
