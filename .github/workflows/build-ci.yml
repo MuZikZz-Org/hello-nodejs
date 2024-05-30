@@ -78,7 +78,7 @@ jobs:
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
   Build_Docker_ACR:
-    needs: [env_workflow,Maven_Build,Package_Versioning]
+    needs: [env_workflow,Nodejs_Build,Package_Versioning]
     name: "Build Docker to ACR"
     uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
     with:
