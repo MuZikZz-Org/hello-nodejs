@@ -26,6 +26,8 @@ env:
     # AKS
     AKS_RESOURCE_GROUP: ${{ fromJson(vars.JSON).AKS_RESOURCE_GROUP }}
     AKS_NAME: ${{ fromJson(vars.JSON).AKS_NAME }}
+    ## Define Workspace
+    Workspace_Dir: "shared-workspace"
 
 jobs:
   env_workflow:
