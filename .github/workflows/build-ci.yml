@@ -79,56 +79,56 @@ jobs:
     with: 
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
-  Build_Docker_ACR:
-    needs: [env_workflow,Nodejs_Build,Package_Versioning]
-    name: "Build Docker to ACR"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
-    with:
-      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
-      APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
-      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
-      AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
-      AZ_CONTAINER_NAME: ${{needs.env_workflow.outputs.AZ_CONTAINER_NAME}}
-    secrets: #inherit # pass all secrets into reuse-workflow
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+#   Build_Docker_ACR:
+#     needs: [env_workflow,Nodejs_Build,Package_Versioning]
+#     name: "Build Docker to ACR"
+#     uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
+#     with:
+#       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
+#       APP_NAME: ${{needs.env_workflow.outputs.PackageName}}
+#       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
+#       AZ_CONTAINER_REGISTRY: ${{needs.env_workflow.outputs.AZ_CONTAINER_REGISTRY}}
+#       AZ_CONTAINER_NAME: ${{needs.env_workflow.outputs.AZ_CONTAINER_NAME}}
+#     secrets: #inherit # pass all secrets into reuse-workflow
+#       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       
-  TEST_CALL_OUTPUT:
-    runs-on: runner-utility
-    needs: Build_Docker_ACR
-    steps:
-      - run: |
-          echo ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
+#   TEST_CALL_OUTPUT:
+#     runs-on: runner-utility
+#     needs: Build_Docker_ACR
+#     steps:
+#       - run: |
+#           echo ${{ needs.Build_Docker_ACR.outputs.PACKAGE_VERSION }}
     
-  Helm_Build_Chart: 
-    needs: [env_workflow,Build_Docker_ACR,Package_Versioning]
-    name: "Helm Build Chart to Blob storage"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@main
-    with:
-      HELM_TEMPLATE_REPO: ${{needs.env_workflow.outputs.HELM_TEMPLATE_REPO}}
-      HELM_TEMPLATE_BRANCH: ${{needs.env_workflow.outputs.HELM_TEMPLATE_BRANCH}}
-      AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
-      AZURE_CONTAINER_NAME: ${{needs.env_workflow.outputs.BLOB_CONTAINER_NAME}}
-      APP_NAME: ${{github.event.repository.name}}
-      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
-    secrets: #inherit
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+#   Helm_Build_Chart: 
+#     needs: [env_workflow,Build_Docker_ACR,Package_Versioning]
+#     name: "Helm Build Chart to Blob storage"
+#     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@main
+#     with:
+#       HELM_TEMPLATE_REPO: ${{needs.env_workflow.outputs.HELM_TEMPLATE_REPO}}
+#       HELM_TEMPLATE_BRANCH: ${{needs.env_workflow.outputs.HELM_TEMPLATE_BRANCH}}
+#       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
+#       AZURE_CONTAINER_NAME: ${{needs.env_workflow.outputs.BLOB_CONTAINER_NAME}}
+#       APP_NAME: ${{github.event.repository.name}}
+#       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
+#     secrets: #inherit
+#       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
  
-  Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
-    needs: [env_workflow,Helm_Build_Chart,Package_Versioning] 
-    name: "Helm deploy to AKS"
-    uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@main
-    with:
-      JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
-      SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
-      APP_NAME: ${{github.event.repository.name}}
-      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
-      HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
-      HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
-      AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
-      AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
-      AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
-    secrets: #inherit
-      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+#   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
+#     needs: [env_workflow,Helm_Build_Chart,Package_Versioning] 
+#     name: "Helm deploy to AKS"
+#     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@main
+#     with:
+#       JobEnvironment: ${{needs.env_workflow.outputs.JobEnvironment}}  #feature-branch
+#       SourceCodeBranch: ${{github.ref_name}}  #feature/test/1
+#       APP_NAME: ${{github.event.repository.name}}
+#       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
+#       HELM_VALUES_REPO: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}}
+#       HELM_VALUES_BRANCH: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}}
+#       AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
+#       AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
+#       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
+#     secrets: #inherit
+#       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
   
   Git_Push_Version:
     needs: [env_workflow,Deploy_helm,Package_Versioning]
