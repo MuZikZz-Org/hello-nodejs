@@ -130,15 +130,24 @@ jobs:
     secrets: #inherit
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
   
-  Git_tag:
-    needs: [Deploy_helm,Package_Versioning]
+  Git_Push_Version:
+    needs: [env_workflow,Deploy_helm,Package_Versioning]
+    name: "Pushing git Version"
+    uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-version.yaml@main
+    with:
+      APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
+      workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
+
+
+  Git_Tag:
+    needs: [Deploy_helm,Package_Versioning,Git_Push_Version]
     name: "Pushing git tag"
     uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
     with:
       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       
   Create_PR:
-    needs: Deploy_helm
+    needs: [Deploy_helm,Git_Push_Versio,Git_Tag]
     name: create pull reauest to main branch
     uses: MuZikZz-Org/action-workflow/.github/workflows/create-pullrequest.yaml@main
     with:
