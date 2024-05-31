@@ -8,6 +8,8 @@ on:
   # pull_request:
   #   branches: [ $default-branch ]
   pull_request:
+    branches: #[ $default-branch ]
+      - 'feature/**'
     types:
       - closed
 
@@ -56,10 +58,12 @@ jobs:
           echo "preparing output env"
 
   Az_login_managed_iden: 
+    if: github.event.pull_request.merged != true
     name: "Calling workflow Azure login with managed identity"
     uses: MuZikZz-Org/action-workflow/.github/workflows/az-authen-iden-selfhosted.yaml@main
 
   Package_Versioning:
+    if: github.event.pull_request.merged != true
     needs: env_workflow
     name: Package versioning
     uses: MuZikZz-Org/action-workflow/.github/workflows/package-versioning.yaml@main
@@ -69,6 +73,7 @@ jobs:
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
   OUTPUT_PackageVersioning:
+    if: github.event.pull_request.merged != true
     runs-on: runner-utility
     needs: Package_Versioning
     steps:
@@ -76,6 +81,7 @@ jobs:
           echo "Package Output form Workflow PackageVersioning: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }}"
           
   Nodejs_Build:
+    if: github.event.pull_request.merged != true
     needs: [env_workflow,Package_Versioning]
     name: Build NodeJS Package
     uses: MuZikZz-Org/action-workflow/.github/workflows/nodejs-build.yaml@main
@@ -95,6 +101,7 @@ jobs:
     # secrets: inherit # pass all secrets into reuse-workflow
     
   Helm_Build_Chart: 
+    if: github.event.pull_request.merged != true
     needs: [env_workflow,Build_Docker_ACR,Package_Versioning]
     name: "Helm Build Chart to Blob storage"
     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-build-chart.yaml@main
@@ -107,6 +114,7 @@ jobs:
       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
  
   Deploy_helm:  ## now use Helm values form https://github.com/brightza008/poc-helmchart.git
+    if: github.event.pull_request.merged != true
     needs: [env_workflow,Helm_Build_Chart,Package_Versioning] 
     name: "Helm deploy to AKS"
     uses: MuZikZz-Org/action-workflow/.github/workflows/helm-aks.yaml@main
@@ -122,6 +130,7 @@ jobs:
       AZURE_STORAGE_ACC_NAME: ${{needs.env_workflow.outputs.BLOB_STORAGE_ACC}}
   
   Git_Push_Version:
+    if: github.event.pull_request.merged != true
     needs: [env_workflow,Deploy_helm,Package_Versioning]
     name: "Pushing git Version"
     uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-version.yaml@main
@@ -131,6 +140,7 @@ jobs:
       SourceCodeBranch: ${{github.ref_name}}
 
   Git_Tag:
+    if: github.event.pull_request.merged != true
     needs: [Deploy_helm,Package_Versioning,Git_Push_Version]
     name: "Pushing git tag"
     uses: MuZikZz-Org/action-workflow/.github/workflows/git-push-tag.yaml@main
@@ -138,6 +148,7 @@ jobs:
       APP_VERSION: ${{ needs.Package_Versioning.outputs.PACKAGE_VERSION_NODEJS }} # use the output (app version) from package-versioning.yaml
       
   Create_PR:
+    if: github.event.pull_request.merged != true
     needs: [Deploy_helm,Git_Push_Version,Git_Tag]
     name: create pull reauest to main branch
     uses: MuZikZz-Org/action-workflow/.github/workflows/create-pullrequest.yaml@main
@@ -148,7 +159,7 @@ jobs:
 
   Clean_Namespace:
     # If Merged
-    if: github.event.pull_request.merged == true
+    if: github.event.pull_request.merged
     needs: env_workflow
     name: Clean up feature namespace after mearge
     uses: MuZikZz-Org/action-workflow/.github/workflows/clean-namespace.yaml@main
