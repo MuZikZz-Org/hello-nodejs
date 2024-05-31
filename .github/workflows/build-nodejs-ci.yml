@@ -144,6 +144,7 @@ jobs:
       SourceCodeBranch: ${{github.ref_name}}
 
 
+
   Clean_Namespace:
     # if_merged
     if: github.event.pull_request.merged == true
@@ -152,3 +153,4 @@ jobs:
     with:
       AKS_RESOURCE_GROUP: ${{needs.env_workflow.outputs.AKS_RESOURCE_GROUP}}
       AKS_NAME: ${{needs.env_workflow.outputs.AKS_NAME}}
+
