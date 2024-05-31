@@ -1,4 +1,7 @@
 {
     "name": "my-action-app",
-    "version": "0.1.7"
+    "version": "0.1.7",
+    "scripts": {
+      "build": "echo 'build leaw ja'"
+    }
 }
