@@ -25,6 +25,8 @@ env:
     # Azure Blob Stotage 
     BLOB_STORAGE_ACC: ${{ fromJson(vars.JSON).BLOB_STORAGE_ACC }}
     BLOB_CONTAINER_NAME: ${{ fromJson(vars.JSON).BLOB_CONTAINER_NAME }}
+    BLOB_CONTAINER_NAME_CONTENT: ${{ fromJson(vars.JSON).BLOB_CONTAINER_NAME_CONTENT }}
+    BLOB_CONTAINER_NAME_AZ_BATCH: ${{ fromJson(vars.JSON).BLOB_CONTAINER_NAME_AZ_BATCH }}
     # AKS
     AKS_RESOURCE_GROUP: ${{ fromJson(vars.JSON).AKS_RESOURCE_GROUP }}
     AKS_NAME: ${{ fromJson(vars.JSON).AKS_NAME }}
@@ -48,12 +50,50 @@ jobs:
       HELM_VALUES_BRANCH: ${{env.HELM_VALUES_BRANCH}}
       BLOB_STORAGE_ACC: ${{env.BLOB_STORAGE_ACC}}
       BLOB_CONTAINER_NAME: ${{env.BLOB_CONTAINER_NAME}}
+      BLOB_CONTAINER_NAME_CONTENT: ${{env.BLOB_CONTAINER_NAME_CONTENT}}
+      BLOB_CONTAINER_NAME_AZ_BATCH: ${{env.BLOB_CONTAINER_NAME_AZ_BATCH}}
       AKS_RESOURCE_GROUP: ${{ env.AKS_RESOURCE_GROUP }}
       AKS_NAME: ${{ env.AKS_NAME }}
       Workspace_Dir: ${{ env.Workspace_Dir }}
     steps:
       - run: |
           echo "preparing output env"
+
+  Checkout:
+    runs-on: ubuntu-latest
+    needs: [env_workflow]
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+        with: 
+          ref: ${{github.ref_name}}
+          path: app
+
+      - name: Check out helmchart
+        uses: actions/checkout@v3
+        with:
+          repository:  ${{needs.env_workflow.outputs.HELM_TEMPLATE_REPO}} 
+          ref:  ${{needs.env_workflow.outputs.inputs.HELM_TEMPLATE_BRANCH}}
+          path: helmchart
+
+      - name: Check out helmvalue
+        uses: actions/checkout@v3
+        with:
+          repository: ${{needs.env_workflow.outputs.HELM_VALUES_REPO}} 
+          ref: ${{needs.env_workflow.outputs.HELM_VALUES_BRANCH}} 
+          path: helmvalue
+
+      - name: Save workspace
+        run: |
+          touch workspace.tar.gz
+          tar --exclude=workspace.tar.gz -czf workspace.tar.gz .
+        continue-on-error: true
+
+      - name: Upload workspace artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: workspace
+          path: workspace.tar.gz
 
   Az_login_managed_iden: 
     if: github.event.pull_request.merged != true
@@ -62,7 +102,7 @@ jobs:
 
   Package_Versioning:
     if: github.event.pull_request.merged != true
-    needs: env_workflow
+    needs: [Checkout,env_workflow]
     name: Package versioning
     uses: MuZikZz-Org/action-workflow/.github/workflows/package-versioning.yaml@main
     with:
@@ -80,13 +120,14 @@ jobs:
           
   Nodejs_Build:
     if: github.event.pull_request.merged != true
-    needs: [env_workflow,Package_Versioning]
+    needs: [Checkout,env_workflow,Package_Versioning]
     name: Build NodeJS Package
     uses: MuZikZz-Org/action-workflow/.github/workflows/nodejs-build.yaml@main
     with: 
       workspace: ${{needs.env_workflow.outputs.Workspace_Dir}}
 
   Build_Docker_ACR:
+    if: github.event.pull_request.merged != true
     needs: [env_workflow,Nodejs_Build,Package_Versioning]
     name: "Build Docker to ACR"
     uses: MuZikZz-Org/action-workflow/.github/workflows/docker-build-acr.yaml@main
